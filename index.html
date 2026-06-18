@@ -75,37 +75,48 @@
         let paginaAtual = 0;
         const limitePorPagina = 20;
 
-     async function carregarProdutos() {
-        const container = document.getElementById('produtos-container');
-        
-        // Acessamos o cliente global definido acima
-        const { data, error } = await window.supabaseClient.from('produtos').select('*');
+      async function carregarProdutos() {
+    const container = document.getElementById('produtos-container');
+    
+    // Cálculo corrigido: garante que o fim seja pelo menos igual ao inicio
+    const inicio = paginaAtual * limitePorPagina;
+    // Se estivermos na primeira página (inicio 0), o fim será 19 (0 + 20 - 1)
+    const fim = inicio + (limitePorPagina - 1);
 
-        if (error) {
-            console.error('Erro:', error);
-            container.innerHTML = '<p>Erro ao carregar produtos.</p>';
-            return;
-        }
+    container.innerHTML = '<p>Carregando...</p>';
 
-        if (!data || data.length === 0) {
-            container.innerHTML = '<p>Nenhum produto cadastrado ainda.</p>';
-            return;
-        }
+    // Removemos o .order('created_at'...) caso a coluna não exista, 
+    // ou certifique-se que o nome da coluna está correto na sua tabela
+    const { data, error } = await window.supabaseClient
+        .from('produtos')
+        .select('*')
+        .range(inicio, fim)
+        .order('created_at', { ascending: false }); 
 
-        container.innerHTML = ''; 
-        
-        data.forEach(p => {
-            container.innerHTML += `
-                <div class="card" onclick="openModal('${p.imagem_url}')">
-                    <img src="${p.imagem_url}" alt="${p.nome}">
-                    <div class="card-content">
-                        <h3>${p.nome}</h3>
-                        <p>${p.descricao}</p>
-                    </div>
-                </div>
-            `;
-        });
+    if (error) {
+        console.error('Erro ao buscar produtos:', error);
+        container.innerHTML = '<p>Erro ao carregar produtos. Verifique o console.</p>';
+        return;
     }
+
+    if (!data || data.length === 0) {
+        container.innerHTML = '<p>Nenhum produto cadastrado.</p>';
+        return;
+    }
+
+    container.innerHTML = ''; 
+    data.forEach(p => {
+        container.innerHTML += `
+            <div class="card" onclick="openModal('${p.imagem_url}')">
+                <img src="${p.imagem_url}" alt="${p.nome}">
+                <div class="card-content">
+                    <h3>${p.nome}</h3>
+                    <p>${p.descricao}</p>
+                </div>
+            </div>
+        `;
+    });
+}
 
         async function mudarPagina(direcao) {
             const novaPagina = paginaAtual + direcao;
