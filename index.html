@@ -49,29 +49,28 @@
 </footer>
 
    <script>
-    // 1. Configuração (Mantenha as suas chaves aqui)
+    // Configurações
     const supabaseUrl = 'https://sdzikuotcdontpxufvai.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkemlrdW90Y2RvbnRweHVmdmFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MDUzNjgsImV4cCI6MjA5NzI4MTM2OH0.G3FsKvyKNprVUM5I1rwf4t06KVbKujvIjgBsKIyVG-o';
 
-    // 2. Inicialização segura: só cria o cliente se ele ainda não existir
-    if (!window.supabaseClient) {
+    // Inicialização protegida: só declara 'supabase' se ela ainda não existir
+    if (typeof window.supabaseClient === 'undefined') {
         window.supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
     }
 
-    // 3. Função de carregamento
     async function carregarProdutos() {
         const container = document.getElementById('produtos-container');
         
-        // Usamos window.supabaseClient para garantir que acessamos o cliente criado acima
+        // Acessamos o cliente global definido acima
         const { data, error } = await window.supabaseClient.from('produtos').select('*');
 
         if (error) {
-            console.error('Erro ao buscar:', error);
+            console.error('Erro:', error);
             container.innerHTML = '<p>Erro ao carregar produtos.</p>';
             return;
         }
 
-        if (data.length === 0) {
+        if (!data || data.length === 0) {
             container.innerHTML = '<p>Nenhum produto cadastrado ainda.</p>';
             return;
         }
