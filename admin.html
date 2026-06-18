@@ -9,7 +9,6 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f9f9f9; margin: 0; padding: 0; color: #333; }
         header { background-color: #ffffff; padding: 0; text-align: center; }
         header img { width: 100%; display: block; }
-        
         .admin-container { max-width: 600px; margin: 40px auto; padding: 30px; background: white; border-radius: 12px; border: 1px solid #eee; }
         input, button { display: block; width: 100%; margin: 15px 0; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
         button { background-color: #333; color: white; cursor: pointer; border: none; font-weight: bold; }
@@ -44,20 +43,16 @@
     </div>
 
     <script>
-        // 1. Inicialização simplificada
-       const supabaseUrl = 'https://sdzikuotcdontpxufvai.supabase.co';
+          const supabaseUrl = 'https://sdzikuotcdontpxufvai.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkemlrdW90Y2RvbnRweHVmdmFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MDUzNjgsImV4cCI6MjA5NzI4MTM2OH0.G3FsKvyKNprVUM5I1rwf4t06KVbKujvIjgBsKIyVG-o';
         const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-        // 2. Funções globais
+        // Funções anexadas ao objeto window para serem acessíveis pelo HTML
         window.fazerLogin = async function() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            const { data, error } = await client.auth.signInWithPassword({
-                email: email,
-                password: password,
-            });
+            const { error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
 
             if (error) {
                 alert('Erro ao logar: ' + error.message);
@@ -77,18 +72,15 @@
 
             const fileName = `${Date.now()}_${file.name}`;
 
-            // Upload
-            const { error: uploadError } = await client.storage
+            const { error: uploadError } = await window.supabaseClient.storage
                 .from('produtos')
                 .upload(fileName, file);
 
             if (uploadError) return alert('Erro no upload: ' + uploadError.message);
 
-            // Obter URL
-            const { data } = client.storage.from('produtos').getPublicUrl(fileName);
+            const { data } = window.supabaseClient.storage.from('produtos').getPublicUrl(fileName);
 
-            // Inserir no banco
-            const { error: dbError } = await client.from('produtos').insert([
+            const { error: dbError } = await window.supabaseClient.from('produtos').insert([
                 { nome: nome, descricao: desc, imagem_url: data.publicUrl }
             ]);
 
