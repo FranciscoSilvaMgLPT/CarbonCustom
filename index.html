@@ -15,6 +15,7 @@
         .card:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
         .card img { width: 100%; height: 250px; object-fit: cover; display: block; }
         .card-content { padding: 20px; }
+        .card-content h3 { margin: 0 0 10px 0; font-size: 1.2rem; }
         
         /* Modal Galeria */
         #modal { display: none; position: fixed; z-index: 1000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); flex-direction: column; justify-content: center; align-items: center; }
@@ -23,22 +24,40 @@
         .modal-nav { display: flex; gap: 20px; margin-top: 20px; }
         .modal-nav button { padding: 10px 20px; cursor: pointer; background: white; border: none; border-radius: 5px; font-weight: bold; }
         .close-btn { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; }
+        
+        /* Footer */
+        footer { text-align: center; padding: 40px; color: #aaa; font-size: 0.8rem; background-color: #f9f9f9; }
+        .footer-insta { color: #666; text-decoration: none; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px; }
     </style>
 </head>
 <body>
 
-    <header><img src="carbonCCedited.png" alt="Carbon Custom Logo"></header>
+    <header>
+        <img src="carbonCCedited.png" alt="Carbon Custom Logo">
+    </header>
 
-    <div class="container" id="produtos-container"></div>
+    <div class="container" id="produtos-container">
+        <p>Carregando produtos...</p>
+    </div>
 
     <div id="modal">
         <span class="close-btn" onclick="closeModal()">&times;</span>
         <img id="modal-img" src="" alt="Ampliada">
-        <div class="modal-nav">
+        <div class="modal-nav" id="modal-nav">
             <button onclick="mudarFoto(-1)">Anterior</button>
             <button onclick="mudarFoto(1)">Próxima</button>
         </div>
     </div>
+
+    <footer>
+        <a href="https://www.instagram.com/carboncustom_pt" target="_blank" class="footer-insta">
+            <img src="https://static.cdninstagram.com/rsrc.php/yr/r/rzWiSjZRxk5.webp" alt="Instagram" style="width: 20px; height: 20px;">
+            Siga-nos no Instagram
+        </a>
+        <br><br>
+        <p>&copy; 2026 CarbonCustom</p>
+        <a href="admin.html" style="color: #ccc; text-decoration: none; font-size: 0.7rem;">Acesso Administrativo</a>
+    </footer>
 
     <script>
         const supabaseUrl = 'https://sdzikuotcdontpxufvai.supabase.co';
@@ -50,10 +69,15 @@
 
         async function carregarProdutos() {
             const container = document.getElementById('produtos-container');
-            const { data } = await client.from('produtos').select('*').order('id', { ascending: false });
+            const { data, error } = await client.from('produtos').select('*').order('id', { ascending: false });
+
+            if (error || !data || data.length === 0) {
+                container.innerHTML = '<p>Nenhum produto disponível.</p>';
+                return;
+            }
 
             container.innerHTML = data.map(p => {
-                const fotos = p.imagem_url.split(','); // Divide a string em array
+                const fotos = p.imagem_url ? p.imagem_url.split(',') : [];
                 return `
                     <div class="card" onclick="openModal('${p.imagem_url}')">
                         <img src="${fotos[0]}" alt="${p.nome}">
@@ -65,21 +89,17 @@
             }).join('');
         }
 
-function openModal(urlsString) {
-    galeriaAtual = urlsString.split(',');
-    indexFotoAtual = 0;
-    
-    document.getElementById('modal-img').src = galeriaAtual[indexFotoAtual];
-    document.getElementById('modal').classList.add('active');
+        function openModal(urlsString) {
+            galeriaAtual = urlsString.split(',');
+            indexFotoAtual = 0;
+            
+            document.getElementById('modal-img').src = galeriaAtual[indexFotoAtual];
+            document.getElementById('modal').classList.add('active');
 
-    // Lógica para mostrar/esconder botões
-    const navButtons = document.querySelector('.modal-nav');
-    if (galeriaAtual.length > 1) {
-        navButtons.style.display = 'flex'; // Mostra se tiver mais de uma
-    } else {
-        navButtons.style.display = 'none'; // Esconde se tiver apenas uma
-    }
-}
+            // Esconde botões se houver apenas uma foto
+            const navButtons = document.getElementById('modal-nav');
+            navButtons.style.display = (galeriaAtual.length > 1) ? 'flex' : 'none';
+        }
 
         function mudarFoto(direcao) {
             indexFotoAtual += direcao;
