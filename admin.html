@@ -18,6 +18,7 @@
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
         .back-link { display: inline-block; margin-bottom: 20px; color: #666; text-decoration: none; }
+    footer { text-align: center; padding: 40px; color: #aaa; font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -72,20 +73,24 @@
             if (error) alert(error.message);
             else { document.getElementById('login-form').style.display = 'none'; document.getElementById('admin-panel').style.display = 'block'; listarProdutos(); }
         }
-
-        async function listarProdutos() {
-            const { data } = await window.mySupabase.from('produtos').select('*');
-            const tbody = document.getElementById('tabela-corpo');
-            tbody.innerHTML = data.map(p => `
-                <tr>
-                    <td>${p.nome}</td>
-                    <td>
-                        <button class="btn-edit" onclick="prepararEdicao(${p.id}, '${p.nome}', '${p.descricao}')">Editar</button>
-                        <button class="btn-danger" onclick="apagarProduto(${p.id})">Apagar</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
+async function listarProdutos() {
+    const { data } = await window.mySupabase.from('produtos').select('*');
+    const tbody = document.getElementById('tabela-corpo');
+    
+    // Adicionamos a coluna da imagem e estilizamos a miniatura
+    tbody.innerHTML = data.map(p => `
+        <tr>
+            <td>
+                <img src="${p.imagem_url}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; vertical-align: middle; margin-right: 10px;">
+                ${p.nome}
+            </td>
+            <td>
+                <button class="btn-edit" onclick="prepararEdicao(${p.id}, '${p.nome}', '${p.descricao}')">Editar</button>
+                <button class="btn-danger" onclick="apagarProduto(${p.id})">Apagar</button>
+            </td>
+        </tr>
+    `).join('');
+}
 
         function prepararEdicao(id, nome, desc) {
             document.getElementById('edit-id').value = id;
