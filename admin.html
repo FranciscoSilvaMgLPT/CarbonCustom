@@ -7,42 +7,65 @@
     <link rel="icon" type="image/png" href="CC-removebg-preview.png">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f9f9f9; margin: 0; padding: 20px; color: #333; }
-        .admin-container { max-width: 800px; margin: 0 auto; padding: 30px; background: white; border-radius: 12px; border: 1px solid #eee; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f9f9f9; margin: 0; padding: 0; color: #333; }
+        header { background-color: #ffffff; padding: 0; text-align: center; }
+        header img { width: 100%; display: block; }
+        .admin-container { max-width: 800px; margin: 40px auto; padding: 30px; background: white; border-radius: 12px; border: 1px solid #eee; }
         input, button { display: block; width: 100%; margin: 10px 0; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
         button { background-color: #333; color: white; cursor: pointer; border: none; font-weight: bold; }
-        .btn-edit { background-color: #f0ad4e; }
+        .btn-edit { background-color: #555; margin-right: 5px; }
         .btn-danger { background-color: #d9534f; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        .back-link { display: inline-block; margin-bottom: 20px; color: #666; text-decoration: none; }
     </style>
 </head>
 <body>
+    <header><img src="carbonCCedited.png" alt="Carbon Custom Logo"></header>
     <div class="admin-container">
-        <h2>Painel de Gestão</h2>
+        <a href="index.html" class="back-link">&larr; Voltar para o Catálogo</a>
         
-        <div id="form-container">
-            <input type="hidden" id="edit-id">
-            <input type="text" id="nome" placeholder="Nome do Produto">
-            <input type="text" id="desc" placeholder="Descrição">
-            <input type="file" id="imagem">
-            <button id="btn-save" onclick="salvarProduto()">Salvar Produto</button>
-            <button id="btn-cancel" style="display:none;" onclick="resetForm()">Cancelar Edição</button>
+        <div id="login-form">
+            <h2>Login</h2>
+            <input type="email" id="email" placeholder="Email">
+            <input type="password" id="password" placeholder="Senha">
+            <button onclick="fazerLogin()">Entrar</button>
         </div>
 
-        <table>
-            <thead><tr><th>Nome</th><th>Ações</th></tr></thead>
-            <tbody id="tabela-corpo"></tbody>
-        </table>
+        <div id="admin-panel" style="display:none;">
+            <h2 id="form-title">Adicionar Produto</h2>
+            <input type="hidden" id="edit-id">
+            <input type="text" id="nome" placeholder="Nome">
+            <input type="text" id="desc" placeholder="Descrição">
+            <input type="file" id="imagem">
+            <button id="btn-acao" onclick="salvarProduto()">Salvar Produto</button>
+            <button id="btn-cancel" style="display:none; background-color: #666;" onclick="resetForm()">Cancelar Edição</button>
+
+            <hr>
+            <h3>Gerir Produtos Existentes</h3>
+            <table>
+                <thead><tr><th>Nome</th><th>Ações</th></tr></thead>
+                <tbody id="tabela-corpo"></tbody>
+            </table>
+        </div>
     </div>
 
     <script>
         const supabaseUrl = 'https://sdzikuotcdontpxufvai.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkemlrdW90Y2RvbnRweHVmdmFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MDUzNjgsImV4cCI6MjA5NzI4MTM2OH0.G3FsKvyKNprVUM5I1rwf4t06KVbKujvIjgBsKIyVG-o';
-        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+        window.mySupabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        async function fazerLogin() {
+            const { error } = await window.mySupabase.auth.signInWithPassword({
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value
+            });
+            if (error) alert(error.message);
+            else { document.getElementById('login-form').style.display = 'none'; document.getElementById('admin-panel').style.display = 'block'; listarProdutos(); }
+        }
 
         async function listarProdutos() {
-            const { data } = await supabase.from('produtos').select('*');
+            const { data } = await window.mySupabase.from('produtos').select('*');
             const tbody = document.getElementById('tabela-corpo');
             tbody.innerHTML = data.map(p => `
                 <tr>
@@ -59,8 +82,18 @@
             document.getElementById('edit-id').value = id;
             document.getElementById('nome').value = nome;
             document.getElementById('desc').value = desc;
-            document.getElementById('btn-save').innerText = 'Atualizar Produto';
-            document.getElementById('btn-cancel').style.display = 'block';
+            document.getElementById('form-title').innerText = "Editar Produto";
+            document.getElementById('btn-acao').innerText = "Atualizar Produto";
+            document.getElementById('btn-cancel').style.display = "block";
+        }
+
+        function resetForm() {
+            document.getElementById('edit-id').value = '';
+            document.getElementById('nome').value = '';
+            document.getElementById('desc').value = '';
+            document.getElementById('form-title').innerText = "Adicionar Produto";
+            document.getElementById('btn-acao').innerText = "Salvar Produto";
+            document.getElementById('btn-cancel').style.display = "none";
         }
 
         async function salvarProduto() {
@@ -69,32 +102,31 @@
             const desc = document.getElementById('desc').value;
 
             if (id) {
-                // Atualizar
-                await supabase.from('produtos').update({ nome, descricao: desc }).eq('id', id);
+                // Atualizar existente
+                const { error } = await window.mySupabase.from('produtos')
+                    .update({ nome, descricao: desc })
+                    .eq('id', id);
+                if (error) alert('Erro ao atualizar: ' + error.message);
+                else alert('Produto atualizado!');
             } else {
-                // Inserir (lógica original de upload...)
-                await supabase.from('produtos').insert([{ nome, descricao: desc }]);
+                // Criar novo
+                const file = document.getElementById('imagem').files[0];
+                if (!file) return alert('Selecione uma imagem!');
+                const fileName = `${Date.now()}_${file.name}`;
+                await window.mySupabase.storage.from('produtos').upload(fileName, file);
+                const { data } = window.mySupabase.storage.from('produtos').getPublicUrl(fileName);
+                await window.mySupabase.from('produtos').insert([{ nome, descricao: desc, imagem_url: data.publicUrl }]);
+                alert('Produto adicionado!');
             }
             resetForm();
             listarProdutos();
         }
 
-        function resetForm() {
-            document.getElementById('edit-id').value = '';
-            document.getElementById('nome').value = '';
-            document.getElementById('desc').value = '';
-            document.getElementById('btn-save').innerText = 'Salvar Produto';
-            document.getElementById('btn-cancel').style.display = 'none';
-        }
-
         async function apagarProduto(id) {
-            if(confirm('Tem certeza?')) {
-                await supabase.from('produtos').delete().eq('id', id);
-                listarProdutos();
-            }
+            if(!confirm('Tem certeza?')) return;
+            await window.mySupabase.from('produtos').delete().eq('id', id);
+            listarProdutos();
         }
-
-        listarProdutos();
     </script>
 </body>
 </html>
