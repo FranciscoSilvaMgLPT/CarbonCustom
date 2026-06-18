@@ -43,64 +43,61 @@
     </div>
 
     <script>
-          const supabaseUrl = 'https://sdzikuotcdontpxufvai.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkemlrdW90Y2RvbnRweHVmdmFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MDUzNjgsImV4cCI6MjA5NzI4MTM2OH0.G3FsKvyKNprVUM5I1rwf4t06KVbKujvIjgBsKIyVG-o';
-        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
-       if (!window.mySupabase) {
+        // Configuração única
+        const supabaseUrl = 'https://sdzikuotcdontpxufvai.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkemlrdW90Y2RvbnRweHVmdmFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MDUzNjgsImV4cCI6MjA5NzI4MTM2OH0.G3FsKvyKNprVUM5I1rwf4t06KVbKujvIjgBsKIyVG-o'; 
+        
+        // Inicialização única e global
         window.mySupabase = supabase.createClient(supabaseUrl, supabaseKey);
-    }
 
-    // 3. Funções globais acessíveis pelos botões HTML
-    window.fazerLogin = async function() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
+        // Função de Login
+        window.fazerLogin = async function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
 
-        const { data, error } = await window.mySupabase.auth.signInWithPassword({
-            email: email,
-            password: password,
-        });
+            const { error } = await window.mySupabase.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
 
-        if (error) {
-            alert('Erro ao logar: ' + error.message);
-        } else {
-            document.getElementById('login-form').style.display = 'none';
-            document.getElementById('admin-panel').style.display = 'block';
-            alert('Login com sucesso!');
-        }
-    };
+            if (error) {
+                alert('Erro ao logar: ' + error.message);
+            } else {
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('admin-panel').style.display = 'block';
+                alert('Login com sucesso!');
+            }
+        };
 
-    window.adicionarProduto = async function() {
-        const file = document.getElementById('imagem').files[0];
-        const nome = document.getElementById('nome').value;
-        const desc = document.getElementById('desc').value;
+        // Função de Upload
+        window.adicionarProduto = async function() {
+            const file = document.getElementById('imagem').files[0];
+            const nome = document.getElementById('nome').value;
+            const desc = document.getElementById('desc').value;
 
-        if (!file || !nome) return alert('Preencha os campos!');
+            if (!file || !nome) return alert('Preencha os campos!');
 
-        const fileName = `${Date.now()}_${file.name}`;
+            const fileName = `${Date.now()}_${file.name}`;
 
-        // Upload
-        const { error: uploadError } = await window.mySupabase.storage
-            .from('produtos')
-            .upload(fileName, file);
+            const { error: uploadError } = await window.mySupabase.storage
+                .from('produtos')
+                .upload(fileName, file);
 
-        if (uploadError) return alert('Erro no upload: ' + uploadError.message);
+            if (uploadError) return alert('Erro no upload: ' + uploadError.message);
 
-        // URL Pública
-        const { data } = window.mySupabase.storage.from('produtos').getPublicUrl(fileName);
+            const { data } = window.mySupabase.storage.from('produtos').getPublicUrl(fileName);
 
-        // Inserir no banco
-        const { error: dbError } = await window.mySupabase.from('produtos').insert([
-            { nome: nome, descricao: desc, imagem_url: data.publicUrl }
-        ]);
+            const { error: dbError } = await window.mySupabase.from('produtos').insert([
+                { nome: nome, descricao: desc, imagem_url: data.publicUrl }
+            ]);
 
-        if (dbError) {
-            alert('Erro ao salvar no banco: ' + dbError.message);
-        } else {
-            alert('Produto adicionado!');
-            location.reload();
-        }
-    };
-</script>
+            if (dbError) {
+                alert('Erro ao salvar no banco: ' + dbError.message);
+            } else {
+                alert('Produto adicionado!');
+                location.reload();
+            }
+        };
+    </script>
 </body>
 </html>
