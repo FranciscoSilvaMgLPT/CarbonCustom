@@ -44,62 +44,61 @@
     </div>
 
     <script>
+        // 1. Inicialização simplificada
        const supabaseUrl = 'https://sdzikuotcdontpxufvai.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkemlrdW90Y2RvbnRweHVmdmFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MDUzNjgsImV4cCI6MjA5NzI4MTM2OH0.G3FsKvyKNprVUM5I1rwf4t06KVbKujvIjgBsKIyVG-o';
-    
-    // Verifica se o Supabase já existe para não declarar duas vezes
-    if (typeof window.supabase === 'undefined') {
-        window.supabase = supabase.createClient(supabaseUrl, supabaseKey);
-    }
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // 2. Função de Login
-    window.fazerLogin = async function() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
+        // 2. Funções globais
+        window.fazerLogin = async function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
 
-        const { data, error } = await window.supabase.auth.signInWithPassword({
-            email: email,
-            password: password,
-        });
+            const { data, error } = await client.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
 
-        if (error) {
-            alert('Erro ao logar: ' + error.message);
-        } else {
-            document.getElementById('login-form').style.display = 'none';
-            document.getElementById('admin-panel').style.display = 'block';
-            alert('Login com sucesso!');
-        }
-    };
+            if (error) {
+                alert('Erro ao logar: ' + error.message);
+            } else {
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('admin-panel').style.display = 'block';
+                alert('Login com sucesso!');
+            }
+        };
 
-    // 3. Função de Upload
-    window.adicionarProduto = async function() {
-        const file = document.getElementById('imagem').files[0];
-        const nome = document.getElementById('nome').value;
-        const desc = document.getElementById('desc').value;
+        window.adicionarProduto = async function() {
+            const file = document.getElementById('imagem').files[0];
+            const nome = document.getElementById('nome').value;
+            const desc = document.getElementById('desc').value;
 
-        if (!file || !nome) return alert('Preencha os campos!');
+            if (!file || !nome) return alert('Preencha os campos!');
 
-        const fileName = `${Date.now()}_${file.name}`;
+            const fileName = `${Date.now()}_${file.name}`;
 
-        const { error: uploadError } = await window.supabase.storage
-            .from('produtos')
-            .upload(fileName, file);
+            // Upload
+            const { error: uploadError } = await client.storage
+                .from('produtos')
+                .upload(fileName, file);
 
-        if (uploadError) return alert('Erro no upload: ' + uploadError.message);
+            if (uploadError) return alert('Erro no upload: ' + uploadError.message);
 
-        const { data } = window.supabase.storage.from('produtos').getPublicUrl(fileName);
+            // Obter URL
+            const { data } = client.storage.from('produtos').getPublicUrl(fileName);
 
-        const { error: dbError } = await window.supabase.from('produtos').insert([
-            { nome: nome, descricao: desc, imagem_url: data.publicUrl }
-        ]);
+            // Inserir no banco
+            const { error: dbError } = await client.from('produtos').insert([
+                { nome: nome, descricao: desc, imagem_url: data.publicUrl }
+            ]);
 
-        if (dbError) {
-            alert('Erro ao salvar no banco: ' + dbError.message);
-        } else {
-            alert('Produto adicionado!');
-            location.reload();
-        }
-    };
-</script>
+            if (dbError) {
+                alert('Erro ao salvar no banco: ' + dbError.message);
+            } else {
+                alert('Produto adicionado!');
+                location.reload();
+            }
+        };
+    </script>
 </body>
 </html>
