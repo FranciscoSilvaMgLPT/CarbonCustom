@@ -6,12 +6,10 @@
     <title>Admin - CarbonCustom</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* Estilos herdados do seu index */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f9f9f9; margin: 0; padding: 0; color: #333; }
         header { background-color: #ffffff; padding: 0; text-align: center; }
         header img { width: 100%; display: block; }
         
-        /* Estilo do Painel Admin */
         .admin-container { max-width: 600px; margin: 40px auto; padding: 30px; background: white; border-radius: 12px; border: 1px solid #eee; }
         input, button { display: block; width: 100%; margin: 15px 0; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
         button { background-color: #333; color: white; cursor: pointer; border: none; font-weight: bold; }
@@ -29,7 +27,7 @@
         <a href="index.html" class="back-link">&larr; Voltar para o Catálogo</a>
         
         <div id="login-form">
-            <h2>Login Administrador CarbonCustom</h2>
+            <h2>Login Administrador</h2>
             <input type="email" id="email" placeholder="Email">
             <input type="password" id="password" placeholder="Senha">
             <button onclick="fazerLogin()">Entrar</button>
@@ -46,44 +44,66 @@
     </div>
 
     <script>
-        const supabase = supabase.createClient('https://sdzikuotcdontpxufvai.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkemlrdW90Y2RvbnRweHVmdmFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MDUzNjgsImV4cCI6MjA5NzI4MTM2OH0.G3FsKvyKNprVUM5I1rwf4t06KVbKujvIjgBsKIyVG-o');
+        // Inicialização do cliente Supabase
+        const supabaseUrl = 'https://sdzikuotcdontpxufvai.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkemlrdW90Y2RvbnRweHVmdmFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MDUzNjgsImV4cCI6MjA5NzI4MTM2OH0.G3FsKvyKNprVUM5I1rwf4t06KVbKujvIjgBsKIyVG-o';
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
+        // Função de Login
         async function fazerLogin() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const { error } = await supabase.auth.signInWithPassword({ email, password });
-            
-            if (!error) {
+
+            const { error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+
+            if (error) {
+                alert('Erro ao logar: ' + error.message);
+            } else {
                 document.getElementById('login-form').style.display = 'none';
                 document.getElementById('admin-panel').style.display = 'block';
-            } else {
-                alert('Erro ao logar: ' + error.message);
+                alert('Login realizado com sucesso!');
             }
         }
 
+        // Função de Upload
         async function adicionarProduto() {
-            const file = document.getElementById('imagem').files[0];
+            const fileInput = document.getElementById('imagem');
+            const file = fileInput.files[0];
             const nome = document.getElementById('nome').value;
             const desc = document.getElementById('desc').value;
-            
-            if (!file || !nome) return alert('Preencha todos os campos!');
+
+            if (!file || !nome) {
+                alert('Por favor, selecione uma imagem e digite um nome.');
+                return;
+            }
 
             const fileName = `${Date.now()}_${file.name}`;
 
-            const { data: uploadData, error: uploadError } = await supabase.storage
+            // 1. Upload da imagem para o Storage
+            const { error: uploadError } = await supabase.storage
                 .from('produtos')
                 .upload(fileName, file);
 
-            if (uploadError) return alert('Erro no upload: ' + uploadError.message);
+            if (uploadError) {
+                alert('Erro no upload: ' + uploadError.message);
+                return;
+            }
 
-            const { data: { publicUrl } } = supabase.storage.from('produtos').getPublicUrl(fileName);
+            // 2. Obter URL pública
+            const { data } = supabase.storage.from('produtos').getPublicUrl(fileName);
+            const publicUrl = data.publicUrl;
 
-            const { error } = await supabase.from('produtos').insert([
+            // 3. Inserir no banco de dados
+            const { error: dbError } = await supabase.from('produtos').insert([
                 { nome: nome, descricao: desc, imagem_url: publicUrl }
             ]);
 
-            if (error) alert('Erro ao salvar no banco: ' + error.message);
-            else {
+            if (dbError) {
+                alert('Erro ao salvar no banco: ' + dbError.message);
+            } else {
                 alert('Produto adicionado com sucesso!');
                 location.reload();
             }
