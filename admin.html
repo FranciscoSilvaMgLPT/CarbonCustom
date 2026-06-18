@@ -34,6 +34,7 @@
         </div>
 
         <div id="admin-panel" style="display:none;">
+            <button onclick="fazerLogout()" style="background-color: #d9534f; margin-bottom: 20px;">Sair (Logout)</button>
             <h2 id="form-title">Adicionar Produto</h2>
             <input type="hidden" id="edit-id">
             <input type="text" id="nome" placeholder="Nome">
@@ -61,39 +62,58 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkemlrdW90Y2RvbnRweHVmdmFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MDUzNjgsImV4cCI6MjA5NzI4MTM2OH0.G3FsKvyKNprVUM5I1rwf4t06KVbKujvIjgBsKIyVG-o';
         window.mySupabase = supabase.createClient(supabaseUrl, supabaseKey);
 
+        // Verificar sessão ao carregar a página
+        window.onload = async () => {
+            const { data: { session } } = await window.mySupabase.auth.getSession();
+            if (session) {
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('admin-panel').style.display = 'block';
+                listarProdutos();
+            }
+        };
+
         async function fazerLogin() {
             const { error } = await window.mySupabase.auth.signInWithPassword({
                 email: document.getElementById('email').value,
                 password: document.getElementById('password').value
             });
-            if (error) alert(error.message);
-            else { document.getElementById('login-form').style.display = 'none'; document.getElementById('admin-panel').style.display = 'block'; listarProdutos(); }
+            if (error) {
+                alert(error.message);
+            } else {
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('admin-panel').style.display = 'block';
+                listarProdutos();
+            }
         }
 
-   async function listarProdutos() {
-    // Adicionamos o .order('id', { ascending: false }) para ordenar pelos mais recentes
-    const { data } = await window.mySupabase
-        .from('produtos')
-        .select('*')
-        .order('id', { ascending: false }); 
-        
-    const tbody = document.getElementById('tabela-corpo');
-    tbody.innerHTML = data.map(p => {
-        const primeiraFoto = p.imagem_url ? p.imagem_url.split(',')[0] : '';
-        return `
-        <tr>
-            <td>
-                <img src="${primeiraFoto}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; margin-right: 10px;">
-                <strong>${p.nome}</strong>
-            </td>
-            <td>${p.descricao}</td>
-            <td>
-                <button class="btn-edit" onclick="prepararEdicao(${p.id}, '${p.nome}', '${p.descricao}')">Editar</button>
-                <button class="btn-danger" onclick="apagarProduto(${p.id})">Apagar</button>
-            </td>
-        </tr>`;
-    }).join('');
-}
+        async function fazerLogout() {
+            await window.mySupabase.auth.signOut();
+            location.reload();
+        }
+
+        async function listarProdutos() {
+            const { data } = await window.mySupabase
+                .from('produtos')
+                .select('*')
+                .order('id', { ascending: false }); 
+                
+            const tbody = document.getElementById('tabela-corpo');
+            tbody.innerHTML = data.map(p => {
+                const primeiraFoto = p.imagem_url ? p.imagem_url.split(',')[0] : '';
+                return `
+                <tr>
+                    <td>
+                        <img src="${primeiraFoto}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; margin-right: 10px;">
+                        <strong>${p.nome}</strong>
+                    </td>
+                    <td>${p.descricao}</td>
+                    <td>
+                        <button class="btn-edit" onclick="prepararEdicao(${p.id}, '${p.nome}', '${p.descricao}')">Editar</button>
+                        <button class="btn-danger" onclick="apagarProduto(${p.id})">Apagar</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
 
         function prepararEdicao(id, nome, desc) {
             document.getElementById('edit-id').value = id;
@@ -102,6 +122,7 @@
             document.getElementById('form-title').innerText = "Editar Produto";
             document.getElementById('btn-acao').innerText = "Atualizar Textos";
             document.getElementById('btn-cancel').style.display = "block";
+            window.scrollTo(0, 0);
         }
 
         function resetForm() {
@@ -119,7 +140,6 @@
             const desc = document.getElementById('desc').value;
             const files = document.getElementById('imagem').files;
 
-            // Se for novo produto, faz upload das fotos
             let urls = [];
             if (files.length > 0) {
                 for (let file of files) {
@@ -131,11 +151,9 @@
             }
 
             if (id) {
-                // Atualizar (Apenas texto. Se quiser fotos novas, sugerimos deletar e criar novo)
                 await window.mySupabase.from('produtos').update({ nome, descricao: desc }).eq('id', id);
                 alert('Informações atualizadas!');
             } else {
-                // Criar novo
                 await window.mySupabase.from('produtos').insert([{ 
                     nome, 
                     descricao: desc, 
@@ -148,7 +166,7 @@
         }
 
         async function apagarProduto(id) {
-            if(!confirm('Tem certeza?')) return;
+            if(!confirm('Tem certeza que deseja apagar este produto?')) return;
             await window.mySupabase.from('produtos').delete().eq('id', id);
             listarProdutos();
         }
