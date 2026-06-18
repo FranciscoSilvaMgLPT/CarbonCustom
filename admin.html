@@ -38,31 +38,21 @@
             <input type="hidden" id="edit-id">
             <input type="text" id="nome" placeholder="Nome">
             <input type="text" id="desc" placeholder="Descrição">
-            <input type="file" id="imagem">
+            <p style="font-size: 0.8rem; color: #666;">Selecione uma ou várias fotos:</p>
+            <input type="file" id="imagem" multiple>
             <button id="btn-acao" onclick="salvarProduto()">Salvar Produto</button>
             <button id="btn-cancel" style="display:none; background-color: #666;" onclick="resetForm()">Cancelar Edição</button>
 
             <hr>
             <h3>Gerir Produtos Existentes</h3>
             <table>
-                <thead>
-                    <tr>
-                        <th>Produto</th>
-                        <th>Descrição</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Produto</th><th>Descrição</th><th>Ações</th></tr></thead>
                 <tbody id="tabela-corpo"></tbody>
             </table>
         </div>
     </div>
 
     <footer>
-        <a href="https://www.instagram.com/carboncustom_pt" target="_blank" style="color: #666; text-decoration: none; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px;">
-            <img src="https://static.cdninstagram.com/rsrc.php/yr/r/rzWiSjZRxk5.webp" alt="Instagram" style="width: 20px; height: 20px;">
-            Siga-nos no Instagram
-        </a>
-        <br><br>
         <p>&copy; 2026 CarbonCustom</p>
     </footer>
 
@@ -83,10 +73,12 @@
         async function listarProdutos() {
             const { data } = await window.mySupabase.from('produtos').select('*');
             const tbody = document.getElementById('tabela-corpo');
-            tbody.innerHTML = data.map(p => `
+            tbody.innerHTML = data.map(p => {
+                const primeiraFoto = p.imagem_url ? p.imagem_url.split(',')[0] : '';
+                return `
                 <tr>
                     <td>
-                        <img src="${p.imagem_url}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; vertical-align: middle; margin-right: 10px;">
+                        <img src="${primeiraFoto}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; margin-right: 10px;">
                         <strong>${p.nome}</strong>
                     </td>
                     <td>${p.descricao}</td>
@@ -94,8 +86,8 @@
                         <button class="btn-edit" onclick="prepararEdicao(${p.id}, '${p.nome}', '${p.descricao}')">Editar</button>
                         <button class="btn-danger" onclick="apagarProduto(${p.id})">Apagar</button>
                     </td>
-                </tr>
-            `).join('');
+                </tr>`;
+            }).join('');
         }
 
         function prepararEdicao(id, nome, desc) {
@@ -103,7 +95,7 @@
             document.getElementById('nome').value = nome;
             document.getElementById('desc').value = desc;
             document.getElementById('form-title').innerText = "Editar Produto";
-            document.getElementById('btn-acao').innerText = "Atualizar Produto";
+            document.getElementById('btn-acao').innerText = "Atualizar Textos";
             document.getElementById('btn-cancel').style.display = "block";
         }
 
@@ -120,21 +112,31 @@
             const id = document.getElementById('edit-id').value;
             const nome = document.getElementById('nome').value;
             const desc = document.getElementById('desc').value;
+            const files = document.getElementById('imagem').files;
+
+            // Se for novo produto, faz upload das fotos
+            let urls = [];
+            if (files.length > 0) {
+                for (let file of files) {
+                    const fileName = `${Date.now()}_${file.name}`;
+                    await window.mySupabase.storage.from('produtos').upload(fileName, file);
+                    const { data } = window.mySupabase.storage.from('produtos').getPublicUrl(fileName);
+                    urls.push(data.publicUrl);
+                }
+            }
 
             if (id) {
-                const { error } = await window.mySupabase.from('produtos')
-                    .update({ nome, descricao: desc })
-                    .eq('id', id);
-                if (error) alert('Erro ao atualizar: ' + error.message);
-                else alert('Produto atualizado!');
+                // Atualizar (Apenas texto. Se quiser fotos novas, sugerimos deletar e criar novo)
+                await window.mySupabase.from('produtos').update({ nome, descricao: desc }).eq('id', id);
+                alert('Informações atualizadas!');
             } else {
-                const file = document.getElementById('imagem').files[0];
-                if (!file) return alert('Selecione uma imagem!');
-                const fileName = `${Date.now()}_${file.name}`;
-                await window.mySupabase.storage.from('produtos').upload(fileName, file);
-                const { data } = window.mySupabase.storage.from('produtos').getPublicUrl(fileName);
-                await window.mySupabase.from('produtos').insert([{ nome, descricao: desc, imagem_url: data.publicUrl }]);
-                alert('Produto adicionado!');
+                // Criar novo
+                await window.mySupabase.from('produtos').insert([{ 
+                    nome, 
+                    descricao: desc, 
+                    imagem_url: urls.join(',') 
+                }]);
+                alert('Produto adicionado com ' + urls.length + ' foto(s)!');
             }
             resetForm();
             listarProdutos();
