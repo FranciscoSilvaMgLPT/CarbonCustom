@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CarbonCustom &copy;</title>
-<link rel="icon" type="image/png" href="CC-removebg-preview.png">
+    <title>CarbonCustom &copy;</title>
+    <link rel="icon" type="image/png" href="CC-removebg-preview.png">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f9f9f9; margin: 0; padding: 0; color: #333; }
@@ -20,7 +20,10 @@
         .card-content { padding: 20px; }
         .card-content h3 { margin: 0 0 10px 0; font-size: 1.2rem; }
 
-        /* Estilo do Modal */
+        /* Estilo da Paginação */
+        .pagination { text-align: center; margin: 40px 0; }
+        .pagination button { padding: 10px 20px; margin: 0 5px; cursor: pointer; background: #333; color: white; border: none; border-radius: 5px; }
+
         #modal { display: none; position: fixed; z-index: 1000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; }
         #modal img { max-width: 90%; max-height: 80%; border-radius: 8px; border: 3px solid white; }
         #modal.active { display: flex; }
@@ -40,34 +43,39 @@
         <p>Carregando produtos...</p>
     </div>
 
+    <div class="pagination">
+        <button onclick="mudarPagina(-1)">Anterior</button>
+        <span id="pagina-info">Página 1</span>
+        <button onclick="mudarPagina(1)">Próximo</button>
+    </div>
+
     <div id="modal">
         <span class="close-btn" onclick="closeModal()">&times;</span>
         <img id="modal-img" src="" alt="Imagem Ampliada">
     </div>
 
-<footer>
-    <a href="https://www.instagram.com/carboncustom_pt" target="_blank" style="color: #666; text-decoration: none; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px;">
-        <img src="https://static.cdninstagram.com/rsrc.php/yr/r/rzWiSjZRxk5.webp" alt="Instagram" style="width: 20px; height: 20px;">
-        Siga-nos no Instagram
-    </a>
-    
-    <br><br>
-    
-    <p>&copy; 2026 CarbonCustom</p>
-    <a href="admin.html" style="color: #ccc; text-decoration: none; font-size: 0.7rem;">Acesso Administrativo</a>
-</footer>
+    <footer>
+        <a href="https://www.instagram.com/carboncustom_pt" target="_blank" style="color: #666; text-decoration: none; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px;">
+            <img src="https://static.cdninstagram.com/rsrc.php/yr/r/rzWiSjZRxk5.webp" alt="Instagram" style="width: 20px; height: 20px;">
+            Siga-nos no Instagram
+        </a>
+        <br><br>
+        <p>&copy; 2026 CarbonCustom</p>
+        <a href="admin.html" style="color: #ccc; text-decoration: none; font-size: 0.7rem;">Acesso Administrativo</a>
+    </footer>
 
-   <script>
-    // Configurações
-    const supabaseUrl = 'https://sdzikuotcdontpxufvai.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkemlrdW90Y2RvbnRweHVmdmFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MDUzNjgsImV4cCI6MjA5NzI4MTM2OH0.G3FsKvyKNprVUM5I1rwf4t06KVbKujvIjgBsKIyVG-o';
+    <script>
+        const supabaseUrl = 'https://sdzikuotcdontpxufvai.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkemlrdW90Y2RvbnRweHVmdmFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MDUzNjgsImV4cCI6MjA5NzI4MTM2OH0.G3FsKvyKNprVUM5I1rwf4t06KVbKujvIjgBsKIyVG-o';
 
-    // Inicialização protegida: só declara 'supabase' se ela ainda não existir
-    if (typeof window.supabaseClient === 'undefined') {
-        window.supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-    }
+        if (typeof window.supabaseClient === 'undefined') {
+            window.supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+        }
 
-    async function carregarProdutos() {
+        let paginaAtual = 0;
+        const limitePorPagina = 20;
+
+     async function carregarProdutos() {
         const container = document.getElementById('produtos-container');
         
         // Acessamos o cliente global definido acima
@@ -99,17 +107,26 @@
         });
     }
 
-    function openModal(src) {
-        document.getElementById('modal-img').src = src;
-        document.getElementById('modal').classList.add('active');
-    }
+        async function mudarPagina(direcao) {
+            const novaPagina = paginaAtual + direcao;
+            if (novaPagina < 0) return;\
+            
+            paginaAtual = novaPagina;
+            document.getElementById('pagina-info').innerText = 'Página ' + (paginaAtual + 1);
+            await carregarProdutos();
+            window.scrollTo(0, 0);
+        }
 
-    function closeModal() {
-        document.getElementById('modal').classList.remove('active');
-    }
+        function openModal(src) {
+            document.getElementById('modal-img').src = src;
+            document.getElementById('modal').classList.add('active');
+        }
 
-    // Iniciar
-    carregarProdutos();
-</script>
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        carregarProdutos();
+    </script>
 </body>
 </html>
