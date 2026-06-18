@@ -10,26 +10,18 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f9f9f9; margin: 0; padding: 0; color: #333; }
         header { background-color: #ffffff; padding: 0; text-align: center; }
         header img { width: 100%; display: block; }
-
         .container { max-width: 1100px; margin: 40px auto; padding: 0 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px; }
-        
         .card { background: white; border-radius: 12px; overflow: hidden; transition: transform 0.3s ease; border: 1px solid #eee; cursor: pointer; }
         .card:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
         .card img { width: 100%; height: 250px; object-fit: cover; display: block; }
-        
         .card-content { padding: 20px; }
         .card-content h3 { margin: 0 0 10px 0; font-size: 1.2rem; }
-
-        /* Estilo da Paginação */
         .pagination { text-align: center; margin: 40px 0; }
         .pagination button { padding: 10px 20px; margin: 0 5px; cursor: pointer; background: #333; color: white; border: none; border-radius: 5px; }
-
         #modal { display: none; position: fixed; z-index: 1000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; }
         #modal img { max-width: 90%; max-height: 80%; border-radius: 8px; border: 3px solid white; }
         #modal.active { display: flex; }
-
         .close-btn { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; }
-        
         footer { text-align: center; padding: 40px; color: #aaa; font-size: 0.8rem; }
     </style>
 </head>
@@ -65,66 +57,62 @@
     </footer>
 
     <script>
+        // Configuração segura
         const supabaseUrl = 'https://sdzikuotcdontpxufvai.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkemlrdW90Y2RvbnRweHVmdmFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MDUzNjgsImV4cCI6MjA5NzI4MTM2OH0.G3FsKvyKNprVUM5I1rwf4t06KVbKujvIjgBsKIyVG-o';
 
-        if (typeof window.supabaseClient === 'undefined') {
+        // Inicialização global única
+        if (!window.supabaseClient) {
             window.supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
         }
 
         let paginaAtual = 0;
         const limitePorPagina = 20;
 
-      async function carregarProdutos() {
-    const container = document.getElementById('produtos-container');
-    
-    // Cálculo corrigido: garante que o fim seja pelo menos igual ao inicio
-    const inicio = paginaAtual * limitePorPagina;
-    // Se estivermos na primeira página (inicio 0), o fim será 19 (0 + 20 - 1)
-    const fim = inicio + (limitePorPagina - 1);
+        async function carregarProdutos() {
+            const container = document.getElementById('produtos-container');
+            const inicio = paginaAtual * limitePorPagina;
+            const fim = inicio + (limitePorPagina - 1);
 
-    container.innerHTML = '<p>Carregando...</p>';
+            container.innerHTML = '<p>Carregando produtos...</p>';
 
-    // Removemos o .order('created_at'...) caso a coluna não exista, 
-    // ou certifique-se que o nome da coluna está correto na sua tabela
-    const { data, error } = await window.supabaseClient
-        .from('produtos')
-        .select('*')
-        .range(inicio, fim)
-        .order('created_at', { ascending: false }); 
+            const { data, error } = await window.supabaseClient
+                .from('produtos')
+                .select('*')
+                .range(inicio, fim)
+                .order('criado_em', { ascending: false }); // Usando 'criado_em' conforme sua tabela
 
-    if (error) {
-        console.error('Erro ao buscar produtos:', error);
-        container.innerHTML = '<p>Erro ao carregar produtos. Verifique o console.</p>';
-        return;
-    }
+            if (error) {
+                console.error('Erro:', error);
+                container.innerHTML = '<p>Erro ao carregar produtos.</p>';
+                return;
+            }
 
-    if (!data || data.length === 0) {
-        container.innerHTML = '<p>Nenhum produto cadastrado.</p>';
-        return;
-    }
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p>Nenhum produto cadastrado.</p>';
+                return;
+            }
 
-    container.innerHTML = ''; 
-    data.forEach(p => {
-        container.innerHTML += `
-            <div class="card" onclick="openModal('${p.imagem_url}')">
-                <img src="${p.imagem_url}" alt="${p.nome}">
-                <div class="card-content">
-                    <h3>${p.nome}</h3>
-                    <p>${p.descricao}</p>
-                </div>
-            </div>
-        `;
-    });
-}
+            container.innerHTML = ''; 
+            data.forEach(p => {
+                container.innerHTML += `
+                    <div class="card" onclick="openModal('${p.imagem_url}')">
+                        <img src="${p.imagem_url}" alt="${p.nome}">
+                        <div class="card-content">
+                            <h3>${p.nome}</h3>
+                            <p>${p.descricao}</p>
+                        </div>
+                    </div>
+                `;
+            });
+        }
 
-        async function mudarPagina(direcao) {
+        function mudarPagina(direcao) {
             const novaPagina = paginaAtual + direcao;
-            if (novaPagina < 0) return;\
-            
+            if (novaPagina < 0) return;
             paginaAtual = novaPagina;
             document.getElementById('pagina-info').innerText = 'Página ' + (paginaAtual + 1);
-            await carregarProdutos();
+            carregarProdutos();
             window.scrollTo(0, 0);
         }
 
