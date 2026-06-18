@@ -18,7 +18,7 @@
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
         .back-link { display: inline-block; margin-bottom: 20px; color: #666; text-decoration: none; }
-    footer { text-align: center; padding: 40px; color: #aaa; font-size: 0.8rem; }
+        footer { text-align: center; padding: 40px; color: #aaa; font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -45,13 +45,19 @@
             <hr>
             <h3>Gerir Produtos Existentes</h3>
             <table>
-                <thead><tr><th>Nome</th><th>Ações</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>Produto</th>
+                        <th>Descrição</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
                 <tbody id="tabela-corpo"></tbody>
             </table>
         </div>
     </div>
 
-<footer>
+    <footer>
         <a href="https://www.instagram.com/carboncustom_pt" target="_blank" style="color: #666; text-decoration: none; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px;">
             <img src="https://static.cdninstagram.com/rsrc.php/yr/r/rzWiSjZRxk5.webp" alt="Instagram" style="width: 20px; height: 20px;">
             Siga-nos no Instagram
@@ -73,24 +79,24 @@
             if (error) alert(error.message);
             else { document.getElementById('login-form').style.display = 'none'; document.getElementById('admin-panel').style.display = 'block'; listarProdutos(); }
         }
-async function listarProdutos() {
-    const { data } = await window.mySupabase.from('produtos').select('*');
-    const tbody = document.getElementById('tabela-corpo');
-    
-    // Adicionamos a coluna da imagem e estilizamos a miniatura
-    tbody.innerHTML = data.map(p => `
-        <tr>
-            <td>
-                <img src="${p.imagem_url}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; vertical-align: middle; margin-right: 10px;">
-                ${p.nome}
-            </td>
-            <td>
-                <button class="btn-edit" onclick="prepararEdicao(${p.id}, '${p.nome}', '${p.descricao}')">Editar</button>
-                <button class="btn-danger" onclick="apagarProduto(${p.id})">Apagar</button>
-            </td>
-        </tr>
-    `).join('');
-}
+
+        async function listarProdutos() {
+            const { data } = await window.mySupabase.from('produtos').select('*');
+            const tbody = document.getElementById('tabela-corpo');
+            tbody.innerHTML = data.map(p => `
+                <tr>
+                    <td>
+                        <img src="${p.imagem_url}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; vertical-align: middle; margin-right: 10px;">
+                        <strong>${p.nome}</strong>
+                    </td>
+                    <td>${p.descricao}</td>
+                    <td>
+                        <button class="btn-edit" onclick="prepararEdicao(${p.id}, '${p.nome}', '${p.descricao}')">Editar</button>
+                        <button class="btn-danger" onclick="apagarProduto(${p.id})">Apagar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
 
         function prepararEdicao(id, nome, desc) {
             document.getElementById('edit-id').value = id;
@@ -116,14 +122,12 @@ async function listarProdutos() {
             const desc = document.getElementById('desc').value;
 
             if (id) {
-                // Atualizar existente
                 const { error } = await window.mySupabase.from('produtos')
                     .update({ nome, descricao: desc })
                     .eq('id', id);
                 if (error) alert('Erro ao atualizar: ' + error.message);
                 else alert('Produto atualizado!');
             } else {
-                // Criar novo
                 const file = document.getElementById('imagem').files[0];
                 if (!file) return alert('Selecione uma imagem!');
                 const fileName = `${Date.now()}_${file.name}`;
