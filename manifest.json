@@ -1,0 +1,15 @@
+{
+  "name": "CarbonCustom",
+  "short_name": "CarbonCustom",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "200x213",
+      "type": "image/png"
+    }
+  ]
+}
