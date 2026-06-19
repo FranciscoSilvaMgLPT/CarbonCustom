@@ -9,20 +9,32 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f9f9f9; margin: 0; padding: 0; color: #333; }
         header { background-color: #ffffff; padding: 0; text-align: center; }
-        header img { width: 100%; display: block; }
+        
+        /* Estilos da logo com Media Query */
+        .logo-header { width: 100%; display: block; }
+        @media (max-width: 768px) {
+            .logo-header { content: url('carbonMovel3.png'); }
+        }
+
         .admin-container { max-width: 800px; margin: 40px auto; padding: 30px; background: white; border-radius: 12px; border: 1px solid #eee; }
         input, button { display: block; width: 100%; margin: 10px 0; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
         button { background-color: #333; color: white; cursor: pointer; border: none; font-weight: bold; }
         .btn-edit { background-color: #555; margin-right: 5px; }
         .btn-danger { background-color: #d9534f; }
+        
+        /* Ajuste de tabela para mobile */
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        
         .back-link { display: inline-block; margin-bottom: 20px; color: #666; text-decoration: none; }
         footer { text-align: center; padding: 40px; color: #aaa; font-size: 0.8rem; }
     </style>
 </head>
 <body>
-    <header><img src="carbonCCedited.png" alt="Carbon Custom Logo"></header>
+    <header>
+        <img src="carbonCCedited.png" alt="Carbon Custom Logo" class="logo-header">
+    </header>
+    
     <div class="admin-container">
         <a href="index.html" class="back-link">&larr; Voltar para o Catálogo</a>
         
@@ -46,10 +58,12 @@
 
             <hr>
             <h3>Gerir Produtos Existentes</h3>
-            <table>
-                <thead><tr><th>Produto</th><th>Descrição</th><th>Ações</th></tr></thead>
-                <tbody id="tabela-corpo"></tbody>
-            </table>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Produto</th><th>Descrição</th><th>Ações</th></tr></thead>
+                    <tbody id="tabela-corpo"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -62,7 +76,6 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkemlrdW90Y2RvbnRweHVmdmFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MDUzNjgsImV4cCI6MjA5NzI4MTM2OH0.G3FsKvyKNprVUM5I1rwf4t06KVbKujvIjgBsKIyVG-o';
         window.mySupabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-        // Verificar sessão ao carregar a página
         window.onload = async () => {
             const { data: { session } } = await window.mySupabase.auth.getSession();
             if (session) {
@@ -77,13 +90,7 @@
                 email: document.getElementById('email').value,
                 password: document.getElementById('password').value
             });
-            if (error) {
-                alert(error.message);
-            } else {
-                document.getElementById('login-form').style.display = 'none';
-                document.getElementById('admin-panel').style.display = 'block';
-                listarProdutos();
-            }
+            if (error) { alert(error.message); } else { location.reload(); }
         }
 
         async function fazerLogout() {
@@ -92,11 +99,7 @@
         }
 
         async function listarProdutos() {
-            const { data } = await window.mySupabase
-                .from('produtos')
-                .select('*')
-                .order('id', { ascending: false }); 
-                
+            const { data } = await window.mySupabase.from('produtos').select('*').order('id', { ascending: false });
             const tbody = document.getElementById('tabela-corpo');
             tbody.innerHTML = data.map(p => {
                 const primeiraFoto = p.imagem_url ? p.imagem_url.split(',')[0] : '';
@@ -139,8 +142,8 @@
             const nome = document.getElementById('nome').value;
             const desc = document.getElementById('desc').value;
             const files = document.getElementById('imagem').files;
-
             let urls = [];
+            
             if (files.length > 0) {
                 for (let file of files) {
                     const fileName = `${Date.now()}_${file.name}`;
@@ -154,12 +157,8 @@
                 await window.mySupabase.from('produtos').update({ nome, descricao: desc }).eq('id', id);
                 alert('Informações atualizadas!');
             } else {
-                await window.mySupabase.from('produtos').insert([{ 
-                    nome, 
-                    descricao: desc, 
-                    imagem_url: urls.join(',') 
-                }]);
-                alert('Produto adicionado com ' + urls.length + ' foto(s)!');
+                await window.mySupabase.from('produtos').insert([{ nome, descricao: desc, imagem_url: urls.join(',') }]);
+                alert('Produto adicionado!');
             }
             resetForm();
             listarProdutos();
